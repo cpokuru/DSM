@@ -25,6 +25,7 @@ message("[./src/] CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
 message("[./src/] CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 option(ENABLE_RBUS_PROVIDER "Toggles the rbus provider to be built as part of DSM, requires librbusprovider and rbus to be installed" OFF)
+option(USE_RDK_BUNDLE_MANAGER "Use rdkBundleManager (libbundlegen.so) to generate OCI bundles locally" OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -pthread")
 message("[./src/] DSM g++ ${CMAKE_CXX_FLAGS}")
@@ -47,6 +48,10 @@ set(DSM_SRC
             "${CMAKE_SOURCE_DIR}/datamodel/adapters/container-runtime-adapter.cpp"
             )
 
+if (USE_RDK_BUNDLE_MANAGER)
+    list(APPEND DSM_SRC "${CMAKE_SOURCE_DIR}/datamodel/bridge/oci_bundle_generator.cpp")
+endif(USE_RDK_BUNDLE_MANAGER)
+
 if (ENABLE_RBUS_PROVIDER)
     set(RBUS_SRC
                 "${CMAKE_SOURCE_DIR}/rbus/dsm_rbus_provider.cpp"
@@ -63,7 +68,17 @@ if (ENABLE_RBUS_PROVIDER)
     target_link_libraries(dsm rbus rbusprovider DobbyClientLib IpcService systemd AppInfraLogging)
 else()
     target_link_libraries(dsm DobbyClientLib IpcService systemd AppInfraLogging)
-endif(ENABLE_RBUS_PROVIDER)   
+endif(ENABLE_RBUS_PROVIDER)
+
+if (USE_RDK_BUNDLE_MANAGER)
+    target_compile_definitions(dsm PUBLIC USE_RDK_BUNDLE_MANAGER)
+    if (DEFINED RDK_BUNDLE_MANAGER_INCLUDE_DIR)
+        target_include_directories(dsm PRIVATE ${RDK_BUNDLE_MANAGER_INCLUDE_DIR})
+    endif()
+    if (DEFINED RDK_BUNDLE_MANAGER_LIB)
+        target_link_libraries(dsm ${RDK_BUNDLE_MANAGER_LIB})
+    endif()
+endif(USE_RDK_BUNDLE_MANAGER)
 
 
 add_executable(dsmcli "${CMAKE_SOURCE_DIR}/dsm-cli.cpp")

@@ -91,7 +91,19 @@ auto Packager::state_to_string(PackageState state) -> std::string{
 Packager::Packager(nlohmann::json config="{}")
     : config(config), worker(std::make_shared<ThreadWorker>()), packager_adapter(std::make_shared<PackagerAdapter>()) {
    std::cout << "<<create>> Packager(config=" << config << ")" << std::endl;
+#ifdef USE_RDK_BUNDLE_MANAGER
+   // Merge BundleManager config section into the adapter config so the adapter
+   // can construct OciBundleGenerator with the correct platform/output settings.
+   nlohmann::json adapterConfig = config.contains(packager_adapter->name)
+       ? config[packager_adapter->name]
+       : nlohmann::json::object();
+   if (config.contains("BundleManager")) {
+       adapterConfig["BundleManager"] = config["BundleManager"];
+   }
+   packager_adapter->configure(adapterConfig);
+#else
    packager_adapter->configure(config[packager_adapter->name]);
+#endif
    worker->start();
 }
 
