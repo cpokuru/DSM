@@ -228,6 +228,9 @@ auto delete_package_config (std::string dest, std::string id, std::string uri, s
 
 PackagerAdapter::PackagerAdapter() : config("") {
    std::cout << "<<create>> PackagerAdapter(config=" << config << ")" << std::endl;
+#ifdef USE_RDK_BUNDLE_MANAGER
+   bundleManagerConfig_ = nlohmann::json::object();
+#endif
 }
 
 void PackagerAdapter::configure(nlohmann::json config) {
@@ -239,6 +242,12 @@ void PackagerAdapter::configure(nlohmann::json config) {
          throw std::invalid_argument(std::string("Destination path doesn't exist and unable to create directory: ")+destination_path);
 
    }
+#ifdef USE_RDK_BUNDLE_MANAGER
+   if (config.contains("BundleManager")) {
+      bundleManagerConfig_ = config["BundleManager"];
+      std::cout << "PackagerAdapter: BundleManager config=" << bundleManagerConfig_ << std::endl;
+   }
+#endif
 }
 
 void PackagerAdapter::wget_callback_success(std::shared_ptr<PackageData> package, std::string id, std::string uri, std::string dest, std::string localUri) 
@@ -313,6 +322,33 @@ auto PackagerAdapter::install(std::shared_ptr<PackageData> package,std::string i
       return package_config;
    }
 
+#ifdef USE_RDK_BUNDLE_MANAGER
+   // New path: treat URI as OCI image, use rdkBundleManager to create OCI bundle locally
+   {
+      std::string platformCfgPath = bundleManagerConfig_.value("platform", "");
+      if (platformCfgPath.empty()) {
+         const char* env = std::getenv("RDK_PLATFORM");
+         if (env) platformCfgPath = env;
+      }
+      std::string bundleOutputBaseDir = bundleManagerConfig_.value("bundleOutputDir", "/tmp/dsm-bundles");
+
+      save_package_config(dest, id, uri, "installing");
+
+      std::string creds = bundleManagerConfig_.value("credentials", "");
+
+      OciBundleGenerator bundleGen(platformCfgPath, bundleOutputBaseDir);
+      std::string bundlePath = bundleGen.generateBundle(uri, creds, id);
+
+      if (bundlePath.empty()) {
+         std::cerr << "OCI bundle generation failed for uri=" << uri << std::endl;
+         return save_package_config(dest, id, uri, "install_failed");
+      }
+
+      package->path = bundlePath;
+      auto package_status = save_package_config(dest, id, uri, "installed", bundlePath, id);
+      return package_status;
+   }
+#else
    //TODO
    // Package may be local file or come via http (should add https also). Replace code with support class!
    // Replace use of wget with libcurl or similar (curlpp)
@@ -341,6 +377,7 @@ auto PackagerAdapter::install(std::shared_ptr<PackageData> package,std::string i
    package->path = dest+filename.value();
    package_status = save_package_config(dest, id, uri, "installed", package->path,localUri);
    return package_status;
+#endif
 }
 
 static int ftw_callback(const char *path, const struct stat *sb, int flag, struct FTW *buf){

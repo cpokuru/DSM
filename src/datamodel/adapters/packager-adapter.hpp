@@ -23,10 +23,17 @@
 
 #include "../../ext/json.hpp"
 
+#ifdef USE_RDK_BUNDLE_MANAGER
+#include "../bridge/oci_bundle_generator.hpp"
+#endif
+
 struct PackageData;
 
 class PackagerAdapter {
    nlohmann::json config;
+#ifdef USE_RDK_BUNDLE_MANAGER
+   nlohmann::json bundleManagerConfig_;
+#endif
 
   public:
    const std::string name{"local-tarball"};
