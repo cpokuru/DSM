@@ -265,26 +265,22 @@ rbusError_t dsm_rbus_provider::SetRequestedState(table_row& row, rbusObject_t in
 
 bool dsm_rbus_provider::isValidURL(std::string url)
 {
-  // Regex to check valid URL
-  const std::regex pattern("((http|https)://)(www.)?[a-zA-Z0-9@:%._\\+~#?&//=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%._\\+~#?&//=]*)");
- 
-  // If the URL
-  // is empty return false
-  if (url.empty())
-  {
-     return false;
-  }
- 
-  // Return true if the URL
-  // matched the ReGex
-  if(std::regex_match(url, pattern))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+    if (url.empty()) return false;
+
+    // Accepts http/https with hostname OR IPv4 address, optional port, optional path
+    // Fix: original regex rejected numeric IPs like http://10.26.69.240:8080/...
+    const std::regex pattern(
+        "^(http|https)://"
+        "("
+          "([a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,6})"       // hostname e.g. example.com
+          "|"
+          "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})" // IPv4 e.g. 10.26.69.240
+        ")"
+        "(:\\d+)?"   // optional port e.g. :8080
+        "(/.*)?$"    // optional path
+    );
+
+    return std::regex_match(url, pattern);
 }
 
 rbusError_t dsm_rbus_provider::methodHandler(UNUSED_CHECK rbusHandle_t handle, char const* methodName, rbusObject_t inParams, UNUSED_CHECK rbusObject_t outParams, rbusMethodAsyncHandle_t asyncHandle) {

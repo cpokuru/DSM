@@ -1,4 +1,3 @@
-
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
@@ -25,6 +24,12 @@ message("[./src/] CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
 message("[./src/] CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 option(ENABLE_RBUS_PROVIDER "Toggles the rbus provider to be built as part of DSM, requires librbusprovider and rbus to be installed" OFF)
+
+# ── NEW: OCI bundlegen integration ───────────────────────────────────────────
+option(ENABLE_BUNDLEGEN "Enable OCI bundle generation via libbundlegen.so" OFF)
+set(BUNDLEGEN_ROOT "/nvram/chandra/dac20bb/rdkcentral/rdkBundleManager/bundlegen-cpp"
+    CACHE PATH "Path to bundlegen-cpp dir containing libbundlegen.so and include/")
+# ─────────────────────────────────────────────────────────────────────────────
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -pthread")
 message("[./src/] DSM g++ ${CMAKE_CXX_FLAGS}")
@@ -58,6 +63,30 @@ endif(ENABLE_RBUS_PROVIDER)
 
 add_executable(dsm "${CMAKE_SOURCE_DIR}/main.cpp" "${DSM_SRC}" "${UTILS_SRC}" "${RBUS_SRC}")
 
+# ── NEW: link libbundlegen.so when ENABLE_BUNDLEGEN=ON ───────────────────────
+if (ENABLE_BUNDLEGEN)
+    message("[./src/] Bundlegen ENABLED — BUNDLEGEN_ROOT=${BUNDLEGEN_ROOT}")
+    add_definitions(-DENABLE_BUNDLEGEN)
+
+    target_include_directories(dsm PRIVATE
+        ${BUNDLEGEN_ROOT}/include
+    )
+
+    # Use full path — more reliable than target_link_directories with include()-based builds
+    target_link_libraries(dsm
+        ${BUNDLEGEN_ROOT}/libbundlegen.so crypto ssl curl archive
+    )
+
+    # Embed rpath so dsm finds libbundlegen.so at runtime without LD_LIBRARY_PATH
+    set_target_properties(dsm PROPERTIES
+        BUILD_RPATH   "${BUNDLEGEN_ROOT}"
+        INSTALL_RPATH "${BUNDLEGEN_ROOT}"
+    )
+
+    message("[./src/] Bundlegen rpath set to ${BUNDLEGEN_ROOT}")
+endif(ENABLE_BUNDLEGEN)
+# ─────────────────────────────────────────────────────────────────────────────
+
 if (ENABLE_RBUS_PROVIDER)
     add_subdirectory(${CMAKE_SOURCE_DIR}/librbusprovider)
     target_link_libraries(dsm rbus rbusprovider DobbyClientLib IpcService systemd AppInfraLogging)
@@ -70,4 +99,3 @@ add_executable(dsmcli "${CMAKE_SOURCE_DIR}/dsm-cli.cpp")
 
 install(TARGETS dsm RUNTIME DESTINATION bin)
 install(TARGETS dsmcli RUNTIME DESTINATION bin)
-

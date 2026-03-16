@@ -1,4 +1,3 @@
-
 // If not stated otherwise in this file or this component's license file the
 // following copyright and licenses apply:
 //
@@ -30,18 +29,43 @@ class PackagerAdapter {
 
   public:
    const std::string name{"local-tarball"};
-   
+
    PackagerAdapter();
    void configure(nlohmann::json config);
-   auto install(std::shared_ptr<PackageData> package,std::string id, std::string uri) -> nlohmann::json;
+   auto install(std::shared_ptr<PackageData> package, std::string id, std::string uri) -> nlohmann::json;
    auto uninstall(std::string id) -> nlohmann::json;
    auto is_installed(std::string id) -> bool;
    auto list() -> nlohmann::json;
    auto check_executable(std::string id) -> nlohmann::json;
-   private:
-   void fork_exe(char* path, char *const args[], const std::function<void()>& fn_callback);
-   void fork_exe_wget(std::shared_ptr<PackageData> package, std::string id, std::string uri, std::string dest, std::string localUri);
-   void wget_callback_success(std::shared_ptr<PackageData> package, std::string id, std::string uri, std::string dest, std::string localUri);
+
+  private:
+   // ── Existing helpers (unchanged) ────────────────────────────────────────
+   void fork_exe(char* path, char* const args[], const std::function<void()>& fn_callback);
+   void fork_exe_wget(std::shared_ptr<PackageData> package, std::string id,
+                      std::string uri, std::string dest, std::string localUri);
+   void wget_callback_success(std::shared_ptr<PackageData> package, std::string id,
+                               std::string uri, std::string dest, std::string localUri);
+
+   // ── OCI bundle flow (new) ────────────────────────────────────────────────
+
+   // Returns true if the URL points to a DAC OCI bundle (contains ".bin-oci")
+   bool is_binoci(const std::string& uri);
+
+   // Top-level OCI install handler — called from install() when is_binoci()==true
+   nlohmann::json install_oci_bundle(std::shared_ptr<PackageData> package,
+                                      const std::string& id,
+                                      const std::string& uri);
+
+   // Step 1: extract the downloaded .bin-oci.tar into destDir (OCI image layout)
+   // Returns true if destDir/index.json exists after extraction
+
+   std::string extract_oci_layout(const std::string& tarPath, const std::string& destDir);
+
+   // Step 2: run the full libbundlegen.so pipeline on an already-extracted OCI layout.
+   // ociLayoutDir  = e.g. /tmp/dsm-oci-work/iperf3-layout  (has index.json + blobs/)
+   // outputDir     = e.g. /home/root/destination/iperf3     (bundle written here)
+   // Returns true on success; outputDir will contain config.json + rootfs/
+   bool run_bundlegen(const std::string& ociLayoutDir, const std::string& outputDir);
 };
 
-#endif
+#endif // __PACKAGER_ADAPTER_HPP
