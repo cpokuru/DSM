@@ -45,6 +45,12 @@ dsm_rbus_provider::dsm_rbus_provider(DSMController & controller)
       {"Status",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
       {"ExecutionUnitList",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_write}) },
       {"ExecutionEnvRef",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"UUID",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Name",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Version",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Vendor",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Description",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Resolved",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
       {"Uninstall()",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_METHOD,rbus_callback_tables::rbus_table_generic_method}) },
       {"Update()",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_METHOD,rbus_callback_tables::rbus_table_generic_method}) }
    });
@@ -53,6 +59,14 @@ dsm_rbus_provider::dsm_rbus_provider(DSMController & controller)
    rbus_table EU ("ExecutionUnit",{
       {"Name",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
       {"Status",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"EUID",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Vendor",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Version",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Description",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"ExecEnvLabel",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"AutoStart",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"RunLevel",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"References",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
       {"SetRequestedState()",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_METHOD,rbus_callback_tables::rbus_table_generic_method}) }
    });
    tables.insert({EU.getName(), EU});
@@ -63,6 +77,15 @@ dsm_rbus_provider::dsm_rbus_provider(DSMController & controller)
       {"Name",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
       {"InitialRunLevel",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,dsm_rbus_provider::rbus_table_dsm_read_write}) },
       {"CurrentRunLevel",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Type",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Vendor",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"Version",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"AllocatedDiskSpace",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"AvailableDiskSpace",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"AllocatedMemory",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"AvailableMemory",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
+      {"RequestedRunLevel",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,dsm_rbus_provider::rbus_table_dsm_read_write}) },
+      {"RunLevelAtBoot",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_PROPERTY,rbus_callback_tables::rbus_table_generic_read_only}) },
       {"SetRunLevel()",rbus_data({nullptr,rbusElementType_t::RBUS_ELEMENT_TYPE_METHOD,rbus_callback_tables::rbus_table_generic_method}) }
    });
    tables.insert({EE.getName(), EE});
@@ -533,6 +556,33 @@ void dsm_rbus_provider::update_ee_entry(int index, nlohmann::json &data) {
 
    if(tables["ExecEnv"].rows[inst]["CurrentRunLevel"].rbus_int != data["CurrentRunLevel"])
       tables["ExecEnv"].rows[inst]["CurrentRunLevel"].rbus_int = data["CurrentRunLevel"];
+
+   if(tables["ExecEnv"].rows[inst]["Type"].rbus_string != data.value("type", "Container"))
+      tables["ExecEnv"].rows[inst]["Type"].rbus_string = data.value("type", "Container");
+
+   if(tables["ExecEnv"].rows[inst]["Vendor"].rbus_string != data.value("vendor", ""))
+      tables["ExecEnv"].rows[inst]["Vendor"].rbus_string = data.value("vendor", "");
+
+   if(tables["ExecEnv"].rows[inst]["Version"].rbus_string != data.value("version", ""))
+      tables["ExecEnv"].rows[inst]["Version"].rbus_string = data.value("version", "");
+
+   if(tables["ExecEnv"].rows[inst]["AllocatedDiskSpace"].rbus_int != data.value("AllocatedDiskSpace", -1))
+      tables["ExecEnv"].rows[inst]["AllocatedDiskSpace"].rbus_int = data.value("AllocatedDiskSpace", -1);
+
+   if(tables["ExecEnv"].rows[inst]["AvailableDiskSpace"].rbus_int != data.value("AvailableDiskSpace", -1))
+      tables["ExecEnv"].rows[inst]["AvailableDiskSpace"].rbus_int = data.value("AvailableDiskSpace", -1);
+
+   if(tables["ExecEnv"].rows[inst]["AllocatedMemory"].rbus_int != data.value("AllocatedMemory", -1))
+      tables["ExecEnv"].rows[inst]["AllocatedMemory"].rbus_int = data.value("AllocatedMemory", -1);
+
+   if(tables["ExecEnv"].rows[inst]["AvailableMemory"].rbus_int != data.value("AvailableMemory", -1))
+      tables["ExecEnv"].rows[inst]["AvailableMemory"].rbus_int = data.value("AvailableMemory", -1);
+
+   if(tables["ExecEnv"].rows[inst]["RequestedRunLevel"].rbus_int != data.value("RequestedRunLevel", -1))
+      tables["ExecEnv"].rows[inst]["RequestedRunLevel"].rbus_int = data.value("RequestedRunLevel", -1);
+
+   if(tables["ExecEnv"].rows[inst]["RunLevelAtBoot"].rbus_int != data.value("RunLevelAtBoot", 5))
+      tables["ExecEnv"].rows[inst]["RunLevelAtBoot"].rbus_int = data.value("RunLevelAtBoot", 5);
 }
 
 //Updates an existing DU entry
@@ -558,6 +608,35 @@ void dsm_rbus_provider::update_du_entry(std::string url, nlohmann::json &data) {
       
       if(tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].rbus_string != exec_unit_list)
          tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].rbus_string = exec_unit_list;
+
+      if(tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string != data.value("UUID", ""))
+         tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = data.value("UUID", "");
+
+      {
+         std::string uri = data.value("URI", "");
+         std::string new_name = uri;
+         auto slash = uri.rfind('/');
+         if (slash != std::string::npos) new_name = uri.substr(slash + 1);
+         for (const char* ext : {".tar.gz", ".tar", ".bin-oci.tar", ".bin-oci"}) {
+            auto p = new_name.find(ext);
+            if (p != std::string::npos) { new_name = new_name.substr(0, p); break; }
+         }
+         if (tables["DeploymentUnit"].rows[inst]["Name"].rbus_string != new_name)
+            tables["DeploymentUnit"].rows[inst]["Name"].rbus_string = new_name;
+      }
+
+      if(tables["DeploymentUnit"].rows[inst]["Version"].rbus_string != data.value("Version", ""))
+         tables["DeploymentUnit"].rows[inst]["Version"].rbus_string = data.value("Version", "");
+
+      if(tables["DeploymentUnit"].rows[inst]["Vendor"].rbus_string != data.value("Vendor", ""))
+         tables["DeploymentUnit"].rows[inst]["Vendor"].rbus_string = data.value("Vendor", "");
+
+      if(tables["DeploymentUnit"].rows[inst]["Description"].rbus_string != data.value("Description", ""))
+         tables["DeploymentUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
+
+      bool resolved_val = data.value("Resolved", false);
+      if(tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool != resolved_val)
+         tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool = resolved_val;
    }
 
 }
@@ -578,12 +657,41 @@ void dsm_rbus_provider::update_eu_entry(std::string uid, nlohmann::json &data) {
    {
       uint32_t inst = iter->second;
 
-      if(tables["ExecutionUnit"].rows[inst]["Name"].rbus_string != data["uid"])
-         tables["ExecutionUnit"].rows[inst]["Name"].rbus_string = data["uid"];
-
-
       if(tables["ExecutionUnit"].rows[inst]["Status"].rbus_string != data["status"])
          tables["ExecutionUnit"].rows[inst]["Status"].rbus_string = data["status"];
+
+      std::string new_name = data.value("Name", data.value("uid", ""));
+      if(tables["ExecutionUnit"].rows[inst]["Name"].rbus_string != new_name)
+         tables["ExecutionUnit"].rows[inst]["Name"].rbus_string = new_name;
+
+      std::string euid = data.value("uid", "");
+      if(tables["ExecutionUnit"].rows[inst]["EUID"].rbus_string != euid)
+         tables["ExecutionUnit"].rows[inst]["EUID"].rbus_string = euid;
+
+      if(tables["ExecutionUnit"].rows[inst]["Vendor"].rbus_string != data.value("Vendor", ""))
+         tables["ExecutionUnit"].rows[inst]["Vendor"].rbus_string = data.value("Vendor", "");
+
+      if(tables["ExecutionUnit"].rows[inst]["Version"].rbus_string != data.value("Version", ""))
+         tables["ExecutionUnit"].rows[inst]["Version"].rbus_string = data.value("Version", "");
+
+      if(tables["ExecutionUnit"].rows[inst]["Description"].rbus_string != data.value("Description", ""))
+         tables["ExecutionUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
+
+      std::string label = data.value("ExecEnvLabel", data.value("uid", ""));
+      if(tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string != label)
+         tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string = label;
+
+      bool auto_start = data.value("AutoStart", false);
+      if(tables["ExecutionUnit"].rows[inst]["AutoStart"].rbus_bool != auto_start)
+         tables["ExecutionUnit"].rows[inst]["AutoStart"].rbus_bool = auto_start;
+
+      int run_level = data.value("RunLevel", -1);
+      if(tables["ExecutionUnit"].rows[inst]["RunLevel"].rbus_int != run_level)
+         tables["ExecutionUnit"].rows[inst]["RunLevel"].rbus_int = run_level;
+
+      std::string refs = data.value("du", "");
+      if(tables["ExecutionUnit"].rows[inst]["References"].rbus_string != refs)
+         tables["ExecutionUnit"].rows[inst]["References"].rbus_string = refs;
    }
 
 }
@@ -780,6 +888,33 @@ bool dsm_rbus_provider::add_ee_entry(int index, nlohmann::json &data) {
       tables["ExecEnv"].rows[inst]["CurrentRunLevel"].current_type = rbusValueType_t::RBUS_INT32;
       tables["ExecEnv"].rows[inst]["CurrentRunLevel"].rbus_int = data["CurrentRunLevel"];
 
+      tables["ExecEnv"].rows[inst]["Type"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecEnv"].rows[inst]["Type"].rbus_string = data.value("type", "Container");
+
+      tables["ExecEnv"].rows[inst]["Vendor"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecEnv"].rows[inst]["Vendor"].rbus_string = data.value("vendor", "");
+
+      tables["ExecEnv"].rows[inst]["Version"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecEnv"].rows[inst]["Version"].rbus_string = data.value("version", "");
+
+      tables["ExecEnv"].rows[inst]["AllocatedDiskSpace"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecEnv"].rows[inst]["AllocatedDiskSpace"].rbus_int = data.value("AllocatedDiskSpace", -1);
+
+      tables["ExecEnv"].rows[inst]["AvailableDiskSpace"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecEnv"].rows[inst]["AvailableDiskSpace"].rbus_int = data.value("AvailableDiskSpace", -1);
+
+      tables["ExecEnv"].rows[inst]["AllocatedMemory"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecEnv"].rows[inst]["AllocatedMemory"].rbus_int = data.value("AllocatedMemory", -1);
+
+      tables["ExecEnv"].rows[inst]["AvailableMemory"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecEnv"].rows[inst]["AvailableMemory"].rbus_int = data.value("AvailableMemory", -1);
+
+      tables["ExecEnv"].rows[inst]["RequestedRunLevel"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecEnv"].rows[inst]["RequestedRunLevel"].rbus_int = data.value("RequestedRunLevel", -1);
+
+      tables["ExecEnv"].rows[inst]["RunLevelAtBoot"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecEnv"].rows[inst]["RunLevelAtBoot"].rbus_int = data.value("RunLevelAtBoot", 5);
+
       rbus_ee_instance_map.insert({index,inst});
       return true;
    }
@@ -813,6 +948,33 @@ bool dsm_rbus_provider::add_du_entry(std::string url, nlohmann::json &data)
       tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].current_type = rbusValueType_t::RBUS_STRING;
       tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].rbus_string = exec_unit_list;
 
+      tables["DeploymentUnit"].rows[inst]["UUID"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = data.value("UUID", "");
+
+      tables["DeploymentUnit"].rows[inst]["Name"].current_type = rbusValueType_t::RBUS_STRING;
+      {
+         std::string uri = data.value("URI", "");
+         std::string name = uri;
+         auto slash = uri.rfind('/');
+         if (slash != std::string::npos) name = uri.substr(slash + 1);
+         for (const char* ext : {".tar.gz", ".tar", ".bin-oci.tar", ".bin-oci"}) {
+            auto p = name.find(ext);
+            if (p != std::string::npos) { name = name.substr(0, p); break; }
+         }
+         tables["DeploymentUnit"].rows[inst]["Name"].rbus_string = name;
+      }
+
+      tables["DeploymentUnit"].rows[inst]["Version"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["DeploymentUnit"].rows[inst]["Version"].rbus_string = data.value("Version", "");
+
+      tables["DeploymentUnit"].rows[inst]["Vendor"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["DeploymentUnit"].rows[inst]["Vendor"].rbus_string = data.value("Vendor", "");
+
+      tables["DeploymentUnit"].rows[inst]["Description"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["DeploymentUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
+
+      tables["DeploymentUnit"].rows[inst]["Resolved"].current_type = rbusValueType_t::RBUS_BOOLEAN;
+      tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool = data.value("Resolved", false);
 
       rbus_du_instance_map.insert({url,inst});
       return true;
@@ -830,13 +992,36 @@ bool dsm_rbus_provider::add_eu_entry(std::string uid, nlohmann::json &data) {
    if(rc == RBUS_ERROR_SUCCESS) {
       
       tables["ExecutionUnit"].rows[inst]["Name"].current_type = rbusValueType_t::RBUS_STRING;
-      tables["ExecutionUnit"].rows[inst]["Name"].rbus_string = data["uid"];
+      tables["ExecutionUnit"].rows[inst]["Name"].rbus_string = data.value("Name", data.value("uid", ""));
 
       auto state = data["status"];
 
       tables["ExecutionUnit"].rows[inst]["Status"].current_type = rbusValueType_t::RBUS_STRING;
       tables["ExecutionUnit"].rows[inst]["Status"].rbus_string = data["status"];
 
+      tables["ExecutionUnit"].rows[inst]["EUID"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecutionUnit"].rows[inst]["EUID"].rbus_string = data.value("uid", "");
+
+      tables["ExecutionUnit"].rows[inst]["Vendor"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecutionUnit"].rows[inst]["Vendor"].rbus_string = data.value("Vendor", "");
+
+      tables["ExecutionUnit"].rows[inst]["Version"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecutionUnit"].rows[inst]["Version"].rbus_string = data.value("Version", "");
+
+      tables["ExecutionUnit"].rows[inst]["Description"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecutionUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
+
+      tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string = data.value("ExecEnvLabel", data.value("uid", ""));
+
+      tables["ExecutionUnit"].rows[inst]["AutoStart"].current_type = rbusValueType_t::RBUS_BOOLEAN;
+      tables["ExecutionUnit"].rows[inst]["AutoStart"].rbus_bool = data.value("AutoStart", false);
+
+      tables["ExecutionUnit"].rows[inst]["RunLevel"].current_type = rbusValueType_t::RBUS_INT32;
+      tables["ExecutionUnit"].rows[inst]["RunLevel"].rbus_int = data.value("RunLevel", -1);
+
+      tables["ExecutionUnit"].rows[inst]["References"].current_type = rbusValueType_t::RBUS_STRING;
+      tables["ExecutionUnit"].rows[inst]["References"].rbus_string = data.value("du", "");
 
       rbus_eu_instance_map.insert({uid,inst});
       return true;

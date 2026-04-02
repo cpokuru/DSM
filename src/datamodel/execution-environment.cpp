@@ -86,6 +86,16 @@ auto ExecutionEnvironment::to_json() -> nlohmann::json {
    for (auto &du : du_list) {
       config["dus"].push_back(du->to_json());
    }
+   // Emit new TR-181 EE metadata fields from config with safe defaults
+   config["type"]             = config.value("type", "Container");
+   config["vendor"]           = config.value("vendor", "");
+   config["version"]          = config.value("version", "");
+   config["AllocatedDiskSpace"]  = config.value("AllocatedDiskSpace", -1);
+   config["AvailableDiskSpace"]  = config.value("AvailableDiskSpace", -1);
+   config["AllocatedMemory"]     = config.value("AllocatedMemory", -1);
+   config["AvailableMemory"]     = config.value("AvailableMemory", -1);
+   config["RequestedRunLevel"]   = config.value("RequestedRunLevel", -1);
+   config["RunLevelAtBoot"]      = config.value("RunLevelAtBoot", 5);
    return config;
 }
 auto ExecutionEnvironment::is_default() -> bool { return config["default"]; }
