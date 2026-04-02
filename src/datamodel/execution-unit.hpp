@@ -34,8 +34,14 @@ class ExecutionUnit{
     std::string uid;
     ContainerRuntime::ContainerState state;
 
-    // nlohmann::json config;
-
+        // TR-181 Layer 1 metadata
+    std::string eu_name_;
+    std::string eu_vendor_;
+    std::string eu_version_;
+    std::string eu_description_;
+    std::string exec_env_label_;
+    bool        auto_start_{ false };
+    int         run_level_{ -1 };
     public:
         ExecutionUnit(ExecutionEnvironment *parent_ee, DeploymentUnit *parent_du);
         ~ExecutionUnit();
@@ -46,6 +52,15 @@ class ExecutionUnit{
         auto get_state() -> ContainerRuntime::ContainerState;
         auto get_detail() -> nlohmann::json;
         auto get_uid() -> std::string;
+                auto get_name()           const -> std::string;
+        auto get_vendor()         const -> std::string;
+        auto get_version()        const -> std::string;
+        auto get_description()    const -> std::string;
+        auto get_exec_env_label() const -> std::string;
+        auto get_auto_start()     const -> bool;
+        auto get_run_level()      const -> int;
+        auto set_auto_start(bool val) -> void;
+        auto set_run_level(int rl)    -> void;
 };
 
 #endif

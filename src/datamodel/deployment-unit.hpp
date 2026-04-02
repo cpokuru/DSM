@@ -37,9 +37,14 @@ class DeploymentUnit {
    nlohmann::json config;   
    std::shared_ptr<ExecutionUnit> eu;
    std::string eu_path;
-
+      // TR-181 Layer 1 metadata
+   std::string du_name_;
+   std::string du_version_;
+   std::string du_vendor_;
+   std::string du_description_;
+   bool        resolved_{ false };
    void link_eu_if_exists();
-
+      static auto extract_name_from_uri(const std::string &uri) -> std::string;
   public:
    DeploymentUnit(ExecutionEnvironment *parent_ee, std::string uri, std::shared_ptr<Packager> packager);
    DeploymentUnit(ExecutionEnvironment *parent_ee, const PackageData &installed_package,
@@ -58,6 +63,13 @@ class DeploymentUnit {
    auto has_eu() -> bool;
    auto get_eu_path() -> std::string;  
    auto get_eu() -> ExecutionUnit*;
+   auto get_name()        const -> std::string;
+   auto get_version()     const -> std::string;
+   auto get_vendor()      const -> std::string;
+   auto get_description() const -> std::string;
+   auto is_resolved()     const -> bool;
+   auto get_exec_env_ref() const -> std::string;
+   auto get_eu_list_str()  const -> std::string;
    
 };
 #endif

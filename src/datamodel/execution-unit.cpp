@@ -27,7 +27,13 @@ ExecutionUnit::ExecutionUnit(ExecutionEnvironment *parent_ee, DeploymentUnit *pa
         {
     std::cout<< "<<create>> ExecutionUnit ["<< uid <<"] EE:"<< parent_ee->name() <<"  DU:"<< parent_du->get_duid() <<std::endl;
     std::cout<< "           Path: ["<< du->get_eu_path()<<"]" <<std::endl;
-    
+       eu_name_        = uid;
+    eu_vendor_      = "";
+    eu_version_     = "";
+    eu_description_ = "";
+    exec_env_label_ = uid;
+    auto_start_     = false;
+    run_level_      = -1; 
 }
 
 ExecutionUnit::~ExecutionUnit()
@@ -76,13 +82,29 @@ auto ExecutionUnit::get_detail() -> nlohmann::json {
     ContainerRuntime *runtime = ee->get_runtime();
     nlohmann::json ret_detail = runtime->getInfo(uid);
 
-    ret_detail["uid"] = uid;
-    ret_detail["ee"]= ee->name();
-    ret_detail["du"]= du->get_duid();    
-    ret_detail["path"]= du->get_eu_path();
-
+        ret_detail["uid"]          = uid;
+    ret_detail["ee"]           = ee->name();
+    ret_detail["du"]           = du->get_duid();    
+    ret_detail["path"]         = du->get_eu_path();
+    ret_detail["Name"]         = eu_name_;
+    ret_detail["Vendor"]       = eu_vendor_;
+    ret_detail["Version"]      = eu_version_;
+    ret_detail["Description"]  = eu_description_;
+    ret_detail["ExecEnvLabel"] = exec_env_label_;
+    ret_detail["AutoStart"]    = auto_start_;
+    ret_detail["RunLevel"]     = run_level_;
+    ret_detail["References"]   = du->get_duid();
     return ret_detail;
 }
 auto ExecutionUnit::get_uid() -> std::string{
     return uid;
 }
+auto ExecutionUnit::get_name()           const -> std::string { return eu_name_; }
+auto ExecutionUnit::get_vendor()         const -> std::string { return eu_vendor_; }
+auto ExecutionUnit::get_version()        const -> std::string { return eu_version_; }
+auto ExecutionUnit::get_description()    const -> std::string { return eu_description_; }
+auto ExecutionUnit::get_exec_env_label() const -> std::string { return exec_env_label_; }
+auto ExecutionUnit::get_auto_start()     const -> bool { return auto_start_; }
+auto ExecutionUnit::get_run_level()      const -> int { return run_level_; }
+auto ExecutionUnit::set_auto_start(bool val) -> void { auto_start_ = val; }
+auto ExecutionUnit::set_run_level(int rl)    -> void { run_level_ = rl; }
