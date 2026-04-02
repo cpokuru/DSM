@@ -28,13 +28,7 @@ DeploymentUnit::DeploymentUnit(ExecutionEnvironment *parent_ee, std::string uri,
       eu(nullptr),
       eu_path("") {
    std::cout << "<<create>> DeploymentUnit (" << uri << ")" << std::endl;
-   // Derive a human-readable name from the filename portion of the URI
-   std::string filename = uri;
-   auto slash = uri.rfind('/');
-   if (slash != std::string::npos) filename = uri.substr(slash + 1);
-   auto dot = filename.rfind('.');
-   if (dot != std::string::npos) filename = filename.substr(0, dot);
-   du_name_        = filename;
+   du_name_        = extract_name_from_uri(uri);
    du_version_     = "";
    du_vendor_      = "";
    du_description_ = "";
@@ -62,13 +56,7 @@ DeploymentUnit::DeploymentUnit(ExecutionEnvironment *parent_ee, const PackageDat
       state(Packager::Installed),
       eu(nullptr),
       eu_path("") {
-   // Derive a human-readable name from the URI filename
-   std::string filename = installed_package.uri;
-   auto slash = filename.rfind('/');
-   if (slash != std::string::npos) filename = filename.substr(slash + 1);
-   auto dot = filename.rfind('.');
-   if (dot != std::string::npos) filename = filename.substr(0, dot);
-   du_name_        = filename;
+   du_name_        = extract_name_from_uri(installed_package.uri);
    du_version_     = "";
    du_vendor_      = "";
    du_description_ = "";
@@ -209,4 +197,13 @@ auto DeploymentUnit::get_exec_env_ref() const -> std::string {
 auto DeploymentUnit::get_eu_list_str() const -> std::string {
    if (eu == nullptr) return "";
    return eu->get_uid();
+}
+
+auto DeploymentUnit::extract_name_from_uri(const std::string &uri) -> std::string {
+   std::string name = uri;
+   auto slash = name.rfind('/');
+   if (slash != std::string::npos) name = name.substr(slash + 1);
+   auto dot = name.rfind('.');
+   if (dot != std::string::npos) name = name.substr(0, dot);
+   return name;
 }

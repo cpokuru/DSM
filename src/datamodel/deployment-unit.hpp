@@ -46,6 +46,7 @@ class DeploymentUnit {
    bool        resolved_{ false };
 
    void link_eu_if_exists();
+   static auto extract_name_from_uri(const std::string &uri) -> std::string;
 
   public:
    DeploymentUnit(ExecutionEnvironment *parent_ee, std::string uri, std::shared_ptr<Packager> packager);
