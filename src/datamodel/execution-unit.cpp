@@ -34,14 +34,14 @@ ExecutionUnit::ExecutionUnit(ExecutionEnvironment *parent_ee, DeploymentUnit *pa
     auto slash = duid.rfind('/');
     std::string base = (slash != std::string::npos) ? duid.substr(slash + 1) : duid;
     // Strip common archive extensions
-    bool stripped2 = true;
-    while (stripped2) {
-        stripped2 = false;
+    bool stripped = true;
+    while (stripped) {
+        stripped = false;
         for (const char* ext : {".bin-oci.tar", ".tar.gz", ".bin-oci", ".tar", ".gz"}) {
             if (base.size() > strlen(ext) &&
                 base.compare(base.size() - strlen(ext), strlen(ext), ext) == 0) {
                 base = base.substr(0, base.size() - strlen(ext));
-                stripped2 = true;
+                stripped = true;
                 break;
             }
         }

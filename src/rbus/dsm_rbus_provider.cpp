@@ -551,7 +551,7 @@ rbusError_t rbus_table::tableMethodHandler (UNUSED_CHECK rbusHandle_t handle, UN
                   // Re-use the existing URL from the row
                   params["uri"] = row_it->second["URL"].rbus_string;
                }
-               params["uuid"] = row_it->second["URL"].rbus_string; // current identifier
+               params["uuid"] = row_it->second["URL"].rbus_string; // URL is used as DU identifier throughout the controller API
 
                std::thread([params]() {
                   dsm_rbus_provider::DSM_ref->du_update(params);
