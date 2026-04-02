@@ -81,6 +81,8 @@ class DSMController {
    auto eu_detail(const nlohmann::json params) -> nlohmann::json;
    auto eu_start(const nlohmann::json params) -> nlohmann::json;
    auto eu_stop(const nlohmann::json params) -> nlohmann::json;
+   auto eu_pause(const nlohmann::json params) -> nlohmann::json;
+   auto eu_resume(const nlohmann::json params) -> nlohmann::json;
    
    auto dsm_save_state(const nlohmann::json params) -> nlohmann::json;
 };

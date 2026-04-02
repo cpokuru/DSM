@@ -49,6 +49,8 @@ class ExecutionUnit{
 
         void start();
         void stop();
+        void pause();
+        void resume();
         auto get_state() -> ContainerRuntime::ContainerState;
         auto get_detail() -> nlohmann::json;
         auto get_uid() -> std::string;

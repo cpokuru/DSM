@@ -375,6 +375,31 @@ auto DSMController::eu_stop(const nlohmann::json params) -> nlohmann::json {
    return nlohmann::json::parse(R"("Stopping EU")");
 };
 
+auto DSMController::eu_pause(const nlohmann::json params) -> nlohmann::json {
+   auto eu_uid = params["uid"];
+   auto eu = find_execution_unit(eu_uid);
+   if(eu == nullptr){
+      return nlohmann::json::parse(R"( {"error":"eu_pause: eu not found."} )");
+   }
+   std::cout << "   DSMController::eu_pause("<< eu_uid<<", "<< eu->get_state()<<")"<<std::endl;
+   if (eu->get_state() != ContainerRuntime::Active){
+      return nlohmann::json::parse(R"( {"error":"Cannot pause EU which is not Active."} )");
+   }
+   eu->pause();
+   return nlohmann::json::parse(R"("Pausing EU")");
+};
+
+auto DSMController::eu_resume(const nlohmann::json params) -> nlohmann::json {
+   auto eu_uid = params["uid"];
+   auto eu = find_execution_unit(eu_uid);
+   if(eu == nullptr){
+      return nlohmann::json::parse(R"( {"error":"eu_resume: eu not found."} )");
+   }
+   std::cout << "   DSMController::eu_resume("<< eu_uid<<", "<< eu->get_state()<<")"<<std::endl;
+   eu->resume();
+   return nlohmann::json::parse(R"("Resuming EU")");
+};
+
 auto DSMController::ee_detail(const nlohmann::json params) -> nlohmann::json { return "not implemented"; };
 auto DSMController::dsm_save_state(const nlohmann::json params) -> nlohmann::json {
    if (save_current_state()) {

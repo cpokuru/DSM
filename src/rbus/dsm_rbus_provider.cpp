@@ -104,11 +104,22 @@ dsm_rbus_provider::dsm_rbus_provider(DSMController & controller)
 }
 static std::string parse_du_name_from_uri(const std::string& uri) {
    std::string name = uri;
+   // Strip path prefix
    auto slash = uri.rfind('/');
    if (slash != std::string::npos) name = uri.substr(slash + 1);
-   for (const char* ext : {".tar.gz", ".tar", ".bin-oci.tar", ".bin-oci"}) {
-      auto p = name.find(ext);
-      if (p != std::string::npos) { name = name.substr(0, p); break; }
+
+   // Strip known archive suffixes, longest first, iteratively
+   bool stripped = true;
+   while (stripped) {
+      stripped = false;
+      for (const char* ext : {".bin-oci.tar", ".tar.gz", ".bin-oci", ".tar", ".gz"}) {
+         if (name.size() > strlen(ext) &&
+             name.compare(name.size() - strlen(ext), strlen(ext), ext) == 0) {
+            name = name.substr(0, name.size() - strlen(ext));
+            stripped = true;
+            break;
+         }
+      }
    }
    return name;
 }
@@ -267,7 +278,7 @@ rbusError_t dsm_rbus_provider::SetRequestedState(table_row& row, rbusObject_t in
     if( reqState!=nullptr && rbusValue_GetType(reqState)==rbusValueType_t::RBUS_STRING ) {
         const char* state = rbusValue_GetString(reqState,nullptr);
         if (state != nullptr) {
-            if (strcmp(state,"Idle") == 0 || strcmp(state,"Active") == 0)
+            if (strcmp(state,"Idle") == 0 || strcmp(state,"Active") == 0 || strcmp(state,"Paused") == 0)
             {
                auto uid = row["Name"].rbus_string;
                nlohmann::json uid_json;
@@ -281,6 +292,10 @@ rbusError_t dsm_rbus_provider::SetRequestedState(table_row& row, rbusObject_t in
                else if (strcmp(state,"Idle") == 0) 
                {
                   ret_json = dsm_rbus_provider::DSM_ref->eu_stop(uid_json);
+               }
+               else if (strcmp(state,"Paused") == 0)
+               {
+                  ret_json = dsm_rbus_provider::DSM_ref->eu_pause(uid_json);
                }
                auto ret_json_str = ret_json.dump();
                rbusValue_SetString(ret,ret_json_str.c_str());
@@ -522,18 +537,31 @@ rbusError_t rbus_table::tableMethodHandler (UNUSED_CHECK rbusHandle_t handle, UN
             return dsm_rbus_provider::SetRequestedState(row_it->second, inParams, outParams);
          }
          else if (function_name == "SetRunLevel()") {
-            //TODO implement DSM SetRunLevel
-            return (rbusError_t::RBUS_ERROR_BUS_ERROR);
+            return dsm_rbus_provider::SetRunLevel(row_it->second, inParams);
          }
          else if (function_name == "Update()") {
             rbusObject_Retain(inParams);
-            try {   
-               //TODO async call needs mutex or similar protection   
-               //TODO thread to call Update in DSM
-                rbusObject_Release(inParams);
+            try {
+               // Get the new URL from inParams if provided, otherwise re-use current URL
+               rbusValue_t url_val = rbusObject_GetValue(inParams, "URL");
+               nlohmann::json params;
+               if (url_val != nullptr && rbusValue_GetType(url_val) == RBUS_STRING) {
+                  params["uri"] = std::string(rbusValue_GetString(url_val, nullptr));
+               } else {
+                  // Re-use the existing URL from the row
+                  params["uri"] = row_it->second["URL"].rbus_string;
+               }
+               params["uuid"] = row_it->second["URL"].rbus_string; // current identifier
+
+               std::thread([params]() {
+                  dsm_rbus_provider::DSM_ref->du_update(params);
+               }).detach();
+
+               rbusObject_Release(inParams);
             }
             catch(...) {
-               std::cerr<<"Failed to spawn thread\n";
+               std::cerr << "Failed to spawn thread for Update()\n";
+               rbusObject_Release(inParams);
                return RBUS_ERROR_BUS_ERROR;
             }
             return RBUS_ERROR_ASYNC_RESPONSE;
@@ -617,8 +645,12 @@ void dsm_rbus_provider::update_du_entry(std::string url, nlohmann::json &data) {
       
       if(tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].rbus_string != exec_unit_list)
          tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].rbus_string = exec_unit_list;
-     if(tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string != data.value("UUID", ""))
-         tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = data.value("UUID", "");
+     {
+         // UUID: use the parsed name as a stable human-readable identifier (placeholder until proper UUID generation is added)
+         std::string uuid_val = parse_du_name_from_uri(data.value("URI", ""));
+         if(tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string != uuid_val)
+            tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = uuid_val;
+      }
 
       {
          std::string new_name = parse_du_name_from_uri(data.value("URI", ""));
@@ -635,7 +667,9 @@ void dsm_rbus_provider::update_du_entry(std::string url, nlohmann::json &data) {
       if(tables["DeploymentUnit"].rows[inst]["Description"].rbus_string != data.value("Description", ""))
          tables["DeploymentUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
 
-      bool resolved_val = data.value("Resolved", false);
+      bool resolved_val = (data.value("state","") == "Installed" || data.value("state","") == "installed")
+                          ? true
+                          : data.value("Resolved", false);
       if(tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool != resolved_val)
          tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool = resolved_val;   
 }
@@ -949,7 +983,8 @@ bool dsm_rbus_provider::add_du_entry(std::string url, nlohmann::json &data)
       tables["DeploymentUnit"].rows[inst]["ExecutionUnitList"].rbus_string = exec_unit_list;
 
       tables["DeploymentUnit"].rows[inst]["UUID"].current_type = rbusValueType_t::RBUS_STRING;
-      tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = data.value("UUID", "");
+      // UUID: use the parsed name as a stable human-readable identifier (placeholder until proper UUID generation is added)
+      tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = parse_du_name_from_uri(data.value("URI", ""));
 
       tables["DeploymentUnit"].rows[inst]["Name"].current_type = rbusValueType_t::RBUS_STRING;
       tables["DeploymentUnit"].rows[inst]["Name"].rbus_string = parse_du_name_from_uri(data.value("URI", ""));
@@ -964,7 +999,12 @@ bool dsm_rbus_provider::add_du_entry(std::string url, nlohmann::json &data)
       tables["DeploymentUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
 
       tables["DeploymentUnit"].rows[inst]["Resolved"].current_type = rbusValueType_t::RBUS_BOOLEAN;
-      tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool = data.value("Resolved", false);
+      {
+         bool resolved_val = (data.value("state","") == "Installed" || data.value("state","") == "installed")
+                             ? true
+                             : data.value("Resolved", false);
+         tables["DeploymentUnit"].rows[inst]["Resolved"].rbus_bool = resolved_val;
+      }
 
       rbus_du_instance_map.insert({url,inst});
       return true;

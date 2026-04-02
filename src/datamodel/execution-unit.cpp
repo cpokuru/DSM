@@ -19,19 +19,38 @@
 #include "execution-unit.hpp"
 #include "../utils/uuid_generator.hpp"
 #include <iostream>
+#include <cstring>
 ExecutionUnit::ExecutionUnit(ExecutionEnvironment *parent_ee, DeploymentUnit *parent_du)
         :ee(parent_ee),
          du(parent_du),
-         uid(generate_UUID(2)),
+         uid(generate_UUID(8)),
          state(ContainerRuntime::Idle)
         {
     std::cout<< "<<create>> ExecutionUnit ["<< uid <<"] EE:"<< parent_ee->name() <<"  DU:"<< parent_du->get_duid() <<std::endl;
     std::cout<< "           Path: ["<< du->get_eu_path()<<"]" <<std::endl;
-       eu_name_        = uid;
+
+    // Derive EU name from parent DU name for better identification
+    std::string duid = du->get_duid();
+    auto slash = duid.rfind('/');
+    std::string base = (slash != std::string::npos) ? duid.substr(slash + 1) : duid;
+    // Strip common archive extensions
+    bool stripped2 = true;
+    while (stripped2) {
+        stripped2 = false;
+        for (const char* ext : {".bin-oci.tar", ".tar.gz", ".bin-oci", ".tar", ".gz"}) {
+            if (base.size() > strlen(ext) &&
+                base.compare(base.size() - strlen(ext), strlen(ext), ext) == 0) {
+                base = base.substr(0, base.size() - strlen(ext));
+                stripped2 = true;
+                break;
+            }
+        }
+    }
+    eu_name_        = base.empty() ? uid : base;
     eu_vendor_      = "";
     eu_version_     = "";
     eu_description_ = "";
-    exec_env_label_ = uid;
+    exec_env_label_ = eu_name_;
     auto_start_     = false;
     run_level_      = -1; 
 }
@@ -51,6 +70,16 @@ void ExecutionUnit::stop(){
     std::cout<<"["<<uid<<"].ExecutionUnit::stop(path:"<<du->get_eu_path()<<")" << std::endl;
     ee->get_runtime()->stop(uid);
     state = ContainerRuntime::Stopping;
+}
+
+void ExecutionUnit::pause(){
+    std::cout<<"["<<uid<<"].ExecutionUnit::pause()" << std::endl;
+    ee->get_runtime()->pause(uid);
+}
+
+void ExecutionUnit::resume(){
+    std::cout<<"["<<uid<<"].ExecutionUnit::resume()" << std::endl;
+    ee->get_runtime()->resume(uid);
 }
 
 auto ExecutionUnit::get_state() -> ContainerRuntime::ContainerState {
