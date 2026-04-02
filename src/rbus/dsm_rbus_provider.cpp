@@ -688,47 +688,33 @@ void dsm_rbus_provider::du_update_fn(dsm_rbus_provider *parent)
 }
 void dsm_rbus_provider::eu_update_fn(dsm_rbus_provider *parent) 
 {
-   std::vector<nlohmann::json> eu_data_list;
    nlohmann::json eu_list = dsm_rbus_provider::DSM_ref->eu_list(nullptr);
 
-   for(size_t i=0; i< eu_list.size(); i++) 
-   {
+   for(size_t i=0; i<eu_list.size(); i++) {
       std::string str = (std::string)eu_list[i];
       ExecutionUnit* eu_data = dsm_rbus_provider::DSM_ref->find_execution_unit(str);
-      if (eu_data != nullptr)
-      {
-         auto eu_data_detail = eu_data->get_detail();
-         eu_data_list.push_back(eu_data_detail);
-      }
-   }
-   for(size_t i=0; i<eu_data_list.size(); i++) {
-      std::string uid = eu_data_list[i]["uid"];
+      if (eu_data == nullptr)
+         continue;
+      auto eu_data_detail = eu_data->get_detail();
+      std::string uid = eu_data_detail["uid"];
       auto iter = parent->eu_cache.find(uid);
       if (iter != parent->eu_cache.end())
       {
-         if(eu_data_list[i] != parent->eu_cache[uid]) {
+         if(eu_data_detail != parent->eu_cache[uid]) {
             //update individual entries
-            std::cout << "EU index " << i << ", name: " << eu_data_list[i]["ee"] << " has changed!\n";
-            parent->update_eu_entry(uid,eu_data_list[i]);
-            parent->eu_cache[uid] = eu_data_list[i];
+            std::cout << "EU index " << i << ", name: " << eu_data_detail["ee"] << " has changed!\n";
+            parent->update_eu_entry(uid,eu_data_detail);
+            parent->eu_cache[uid] = eu_data_detail;
          }
       }
       else
       {
-         std::string str = (std::string)eu_list[i];
-         ExecutionUnit* eu_data = dsm_rbus_provider::DSM_ref->find_execution_unit(str);
-         if (eu_data != nullptr)
+         if(parent->add_eu_entry(uid,eu_data_detail)) 
          {
-            auto eu_data_detail = eu_data->get_detail();
-            std::string uid = eu_data_detail["uid"];
-            if(parent->add_eu_entry(uid,eu_data_detail)) 
-            {
-               parent->eu_cache.insert({uid,eu_data_detail});
-            }
+            parent->eu_cache.insert({uid,eu_data_detail});
          }
       }
    }
-   if (eu_list.size() != parent->eu_cache.size())
    {
       std::vector<std::string> remove_list;
       for(auto &pair : parent->eu_cache) 

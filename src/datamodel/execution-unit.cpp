@@ -22,7 +22,7 @@
 ExecutionUnit::ExecutionUnit(ExecutionEnvironment *parent_ee, DeploymentUnit *parent_du)
         :ee(parent_ee),
          du(parent_du),
-         uid(generate_UUID(2)),
+         uid(generate_UUID(8)),
          state(ContainerRuntime::Idle)
         {
     std::cout<< "<<create>> ExecutionUnit ["<< uid <<"] EE:"<< parent_ee->name() <<"  DU:"<< parent_du->get_duid() <<std::endl;

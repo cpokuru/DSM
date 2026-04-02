@@ -346,7 +346,7 @@ auto DSMController::eu_start(const nlohmann::json params) -> nlohmann::json {
    auto eu_uid = params["uid"];
    auto eu = find_execution_unit(eu_uid);
    if(eu == nullptr){
-      return nlohmann::json::parse(R"( {"error":"detail_eu: eu not found."} )");
+      return nlohmann::json::parse(R"( {"error":"eu_start: eu not found."} )");
    }
    std::cout << "   DSMController::eu_start("<< eu_uid<<", "<< eu->get_state()<<")"<<std::endl;
 
@@ -363,7 +363,7 @@ auto DSMController::eu_stop(const nlohmann::json params) -> nlohmann::json {
    auto eu_uid = params["uid"];
    auto eu = find_execution_unit(eu_uid);
    if(eu == nullptr){
-      return nlohmann::json::parse(R"( {"error":"detail_eu: eu not found."} )");
+      return nlohmann::json::parse(R"( {"error":"eu_stop: eu not found."} )");
    }
    
    std::cout << "   DSMController::eu_stop("<< eu_uid<<", "<< eu->get_state()<<")"<<std::endl;
