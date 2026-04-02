@@ -26,6 +26,15 @@ ExecutionEnvironment::ExecutionEnvironment(nlohmann::json config, std::shared_pt
       packager(packager),
       runtime(runtime){
    std::cout << "<<create>> ExecutionEnvironment = " << config["name"] << std::endl;
+   type_                 = this->config.value("type",                "Container");
+   vendor_               = this->config.value("vendor",               "");
+   version_              = this->config.value("version",              "");
+   allocated_disk_space_ = this->config.value("AllocatedDiskSpace",  -1);
+   available_disk_space_ = this->config.value("AvailableDiskSpace",  -1);
+   allocated_memory_     = this->config.value("AllocatedMemory",     -1);
+   available_memory_     = this->config.value("AvailableMemory",     -1);
+   requested_run_level_  = this->config.value("RequestedRunLevel",   -1);
+   run_level_at_boot_    = this->config.value("RunLevelAtBoot",       5);
 }
 
 auto ExecutionEnvironment::id() const -> unsigned int { return config["id"]; }
@@ -43,6 +52,17 @@ auto ExecutionEnvironment::initial_runlevel() const -> int { return config["Init
 auto ExecutionEnvironment::set_initial_runlevel(int rl) -> void { config["InitialRunLevel"]=rl; }
 
 auto ExecutionEnvironment::current_runlevel() const -> int { return config["CurrentRunLevel"]; }
+
+auto ExecutionEnvironment::type()                  const -> std::string { return type_; }
+auto ExecutionEnvironment::vendor()                const -> std::string { return vendor_; }
+auto ExecutionEnvironment::version()               const -> std::string { return version_; }
+auto ExecutionEnvironment::allocated_disk_space()  const -> int { return allocated_disk_space_; }
+auto ExecutionEnvironment::available_disk_space()  const -> int { return available_disk_space_; }
+auto ExecutionEnvironment::allocated_memory()      const -> int { return allocated_memory_; }
+auto ExecutionEnvironment::available_memory()      const -> int { return available_memory_; }
+auto ExecutionEnvironment::requested_run_level()   const -> int { return requested_run_level_; }
+auto ExecutionEnvironment::set_requested_run_level(int rl) -> void { requested_run_level_ = rl; }
+auto ExecutionEnvironment::run_level_at_boot()     const -> int { return run_level_at_boot_; }
 
 auto ExecutionEnvironment::install(std::string uri) -> std::shared_ptr<DeploymentUnit> {   
    auto package = packager->find_package(uri);
@@ -82,6 +102,15 @@ auto ExecutionEnvironment::find_deployment_unit(const std::string uri) -> std::s
 }
 
 auto ExecutionEnvironment::to_json() -> nlohmann::json {
+   config["Type"]               = type_;
+   config["Vendor"]             = vendor_;
+   config["Version"]            = version_;
+   config["AllocatedDiskSpace"] = allocated_disk_space_;
+   config["AvailableDiskSpace"] = available_disk_space_;
+   config["AllocatedMemory"]    = allocated_memory_;
+   config["AvailableMemory"]    = available_memory_;
+   config["RequestedRunLevel"]  = requested_run_level_;
+   config["RunLevelAtBoot"]     = run_level_at_boot_;
    config["dus"] = nlohmann::json::parse("[]");
    for (auto &du : du_list) {
       config["dus"].push_back(du->to_json());

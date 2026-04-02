@@ -28,8 +28,24 @@ DeploymentUnit::DeploymentUnit(ExecutionEnvironment *parent_ee, std::string uri,
       eu(nullptr),
       eu_path("") {
    std::cout << "<<create>> DeploymentUnit (" << uri << ")" << std::endl;
-   config["URI"] = uri;
-   config["UUID"] = uid;
+   // Derive a human-readable name from the filename portion of the URI
+   std::string filename = uri;
+   auto slash = uri.rfind('/');
+   if (slash != std::string::npos) filename = uri.substr(slash + 1);
+   auto dot = filename.rfind('.');
+   if (dot != std::string::npos) filename = filename.substr(0, dot);
+   du_name_        = filename;
+   du_version_     = "";
+   du_vendor_      = "";
+   du_description_ = "";
+   resolved_       = false;
+   config["URI"]         = uri;
+   config["UUID"]        = uid;
+   config["Name"]        = du_name_;
+   config["Version"]     = du_version_;
+   config["Vendor"]      = du_vendor_;
+   config["Description"] = du_description_;
+   config["Resolved"]    = resolved_;
    packager->append_package(uid, uri);
    packager->on_update(uri,
                        [=](std::string uid, Packager::PackageState new_state) 
@@ -46,8 +62,24 @@ DeploymentUnit::DeploymentUnit(ExecutionEnvironment *parent_ee, const PackageDat
       state(Packager::Installed),
       eu(nullptr),
       eu_path("") {
-   config["URI"] = installed_package.uri;
-   config["UUID"] = installed_package.ext_id;
+   // Derive a human-readable name from the URI filename
+   std::string filename = installed_package.uri;
+   auto slash = filename.rfind('/');
+   if (slash != std::string::npos) filename = filename.substr(slash + 1);
+   auto dot = filename.rfind('.');
+   if (dot != std::string::npos) filename = filename.substr(0, dot);
+   du_name_        = filename;
+   du_version_     = "";
+   du_vendor_      = "";
+   du_description_ = "";
+   resolved_       = false;
+   config["URI"]         = installed_package.uri;
+   config["UUID"]        = installed_package.ext_id;
+   config["Name"]        = du_name_;
+   config["Version"]     = du_version_;
+   config["Vendor"]      = du_vendor_;
+   config["Description"] = du_description_;
+   config["Resolved"]    = resolved_;
    packager->on_update(installed_package.uri,
                        [=](std::string uid, Packager::PackageState new_state) 
                        { 
@@ -62,7 +94,12 @@ DeploymentUnit::DeploymentUnit(ExecutionEnvironment *parent_ee, const Deployment
       uid(other.uid), 
       state(other.state),
       eu(other.eu),
-      eu_path(other.eu_path) {      
+      eu_path(other.eu_path),
+      du_name_(other.du_name_),
+      du_version_(other.du_version_),
+      du_vendor_(other.du_vendor_),
+      du_description_(other.du_description_),
+      resolved_(other.resolved_) {      
    std::cout << "<<copy>> DeploymentUnit (" << uid << ")" << std::endl;
    config = other.config;
    packager->on_update(config["URI"],
@@ -123,7 +160,14 @@ bool DeploymentUnit::uninstall() {
    return false;
 }
 
-auto DeploymentUnit::to_json() -> nlohmann::json { return config; }
+auto DeploymentUnit::to_json() -> nlohmann::json {
+   config["Name"]        = du_name_;
+   config["Version"]     = du_version_;
+   config["Vendor"]      = du_vendor_;
+   config["Description"] = du_description_;
+   config["Resolved"]    = resolved_;
+   return config;
+}
 
 auto DeploymentUnit::get_detail() -> nlohmann::json {
    auto detail = config;
@@ -134,7 +178,14 @@ auto DeploymentUnit::get_detail() -> nlohmann::json {
    if (has_eu()){
       detail["eu"] = eu->get_uid();
       detail["eu.path"] = eu_path;
-   }   
+   }
+   detail["Name"]             = du_name_;
+   detail["Version"]          = du_version_;
+   detail["Vendor"]           = du_vendor_;
+   detail["Description"]      = du_description_;
+   detail["Resolved"]         = resolved_;
+   detail["ExecutionEnvRef"]  = (ee != nullptr) ? ee->name() : "";
+   detail["ExecutionUnitList"] = get_eu_list_str();
    return detail; 
 }
 auto DeploymentUnit::has_eu() -> bool { return eu != nullptr; }
@@ -143,4 +194,19 @@ auto DeploymentUnit::get_eu_path() -> std::string { return eu_path;}
 
 auto DeploymentUnit::get_eu() -> ExecutionUnit*{
    return eu.get();
+}
+
+auto DeploymentUnit::get_name()        const -> std::string { return du_name_; }
+auto DeploymentUnit::get_version()     const -> std::string { return du_version_; }
+auto DeploymentUnit::get_vendor()      const -> std::string { return du_vendor_; }
+auto DeploymentUnit::get_description() const -> std::string { return du_description_; }
+auto DeploymentUnit::is_resolved()     const -> bool { return resolved_; }
+
+auto DeploymentUnit::get_exec_env_ref() const -> std::string {
+   return (ee != nullptr) ? ee->name() : "";
+}
+
+auto DeploymentUnit::get_eu_list_str() const -> std::string {
+   if (eu == nullptr) return "";
+   return eu->get_uid();
 }

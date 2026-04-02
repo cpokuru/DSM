@@ -36,7 +36,18 @@ class ExecutionEnvironment {
    std::shared_ptr<Packager> packager {nullptr};
    std::shared_ptr<ContainerRuntime> runtime {nullptr};
    std::vector<std::shared_ptr<DeploymentUnit> > du_list;
-   
+
+   // TR-181 Layer 1 metadata
+   std::string type_;
+   std::string vendor_;
+   std::string version_;
+   int         allocated_disk_space_{ -1 };
+   int         available_disk_space_{ -1 };
+   int         allocated_memory_{ -1 };
+   int         available_memory_{ -1 };
+   int         requested_run_level_{ -1 };
+   int         run_level_at_boot_{ 5 };
+
   public:
    ExecutionEnvironment(nlohmann::json config, std::shared_ptr<Packager> packager, std::shared_ptr<ContainerRuntime> runtime);
    ~ExecutionEnvironment() = default;
@@ -49,6 +60,16 @@ class ExecutionEnvironment {
    auto initial_runlevel() const -> int;
    auto set_initial_runlevel(int rl) -> void;
    auto current_runlevel() const -> int;
+   auto type()                  const -> std::string;
+   auto vendor()                const -> std::string;
+   auto version()               const -> std::string;
+   auto allocated_disk_space()  const -> int;
+   auto available_disk_space()  const -> int;
+   auto allocated_memory()      const -> int;
+   auto available_memory()      const -> int;
+   auto requested_run_level()   const -> int;
+   auto set_requested_run_level(int rl) -> void;
+   auto run_level_at_boot()     const -> int;
    auto install(std::string uri) -> std::shared_ptr<DeploymentUnit>;
    auto add_existing(PackageData &installed_package) -> std::shared_ptr<DeploymentUnit>;
    auto has_du_in_config(std::string uid) -> bool;
