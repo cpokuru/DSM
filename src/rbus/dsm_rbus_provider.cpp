@@ -103,6 +103,17 @@ dsm_rbus_provider::dsm_rbus_provider(DSMController & controller)
 
 }
 
+static std::string parse_du_name_from_uri(const std::string& uri) {
+   std::string name = uri;
+   auto slash = uri.rfind('/');
+   if (slash != std::string::npos) name = uri.substr(slash + 1);
+   for (const char* ext : {".tar.gz", ".tar", ".bin-oci.tar", ".bin-oci"}) {
+      auto p = name.find(ext);
+      if (p != std::string::npos) { name = name.substr(0, p); break; }
+   }
+   return name;
+}
+
 dsm_rbus_provider::~dsm_rbus_provider() {
    //Every DU had its elements subscribed to the handler. Unsubscribe each from it on close
    rbus_table& DU = tables.at("DeploymentUnit");
@@ -613,14 +624,7 @@ void dsm_rbus_provider::update_du_entry(std::string url, nlohmann::json &data) {
          tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = data.value("UUID", "");
 
       {
-         std::string uri = data.value("URI", "");
-         std::string new_name = uri;
-         auto slash = uri.rfind('/');
-         if (slash != std::string::npos) new_name = uri.substr(slash + 1);
-         for (const char* ext : {".tar.gz", ".tar", ".bin-oci.tar", ".bin-oci"}) {
-            auto p = new_name.find(ext);
-            if (p != std::string::npos) { new_name = new_name.substr(0, p); break; }
-         }
+         std::string new_name = parse_du_name_from_uri(data.value("URI", ""));
          if (tables["DeploymentUnit"].rows[inst]["Name"].rbus_string != new_name)
             tables["DeploymentUnit"].rows[inst]["Name"].rbus_string = new_name;
       }
@@ -660,9 +664,9 @@ void dsm_rbus_provider::update_eu_entry(std::string uid, nlohmann::json &data) {
       if(tables["ExecutionUnit"].rows[inst]["Status"].rbus_string != data["status"])
          tables["ExecutionUnit"].rows[inst]["Status"].rbus_string = data["status"];
 
-      std::string new_name = data.value("Name", data.value("uid", ""));
-      if(tables["ExecutionUnit"].rows[inst]["Name"].rbus_string != new_name)
-         tables["ExecutionUnit"].rows[inst]["Name"].rbus_string = new_name;
+      std::string execution_unit_name = data.value("Name", data.value("uid", ""));
+      if(tables["ExecutionUnit"].rows[inst]["Name"].rbus_string != execution_unit_name)
+         tables["ExecutionUnit"].rows[inst]["Name"].rbus_string = execution_unit_name;
 
       std::string euid = data.value("uid", "");
       if(tables["ExecutionUnit"].rows[inst]["EUID"].rbus_string != euid)
@@ -677,9 +681,9 @@ void dsm_rbus_provider::update_eu_entry(std::string uid, nlohmann::json &data) {
       if(tables["ExecutionUnit"].rows[inst]["Description"].rbus_string != data.value("Description", ""))
          tables["ExecutionUnit"].rows[inst]["Description"].rbus_string = data.value("Description", "");
 
-      std::string label = data.value("ExecEnvLabel", data.value("uid", ""));
-      if(tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string != label)
-         tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string = label;
+      std::string exec_env_label = data.value("ExecEnvLabel", data.value("uid", ""));
+      if(tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string != exec_env_label)
+         tables["ExecutionUnit"].rows[inst]["ExecEnvLabel"].rbus_string = exec_env_label;
 
       bool auto_start = data.value("AutoStart", false);
       if(tables["ExecutionUnit"].rows[inst]["AutoStart"].rbus_bool != auto_start)
@@ -952,17 +956,7 @@ bool dsm_rbus_provider::add_du_entry(std::string url, nlohmann::json &data)
       tables["DeploymentUnit"].rows[inst]["UUID"].rbus_string = data.value("UUID", "");
 
       tables["DeploymentUnit"].rows[inst]["Name"].current_type = rbusValueType_t::RBUS_STRING;
-      {
-         std::string uri = data.value("URI", "");
-         std::string name = uri;
-         auto slash = uri.rfind('/');
-         if (slash != std::string::npos) name = uri.substr(slash + 1);
-         for (const char* ext : {".tar.gz", ".tar", ".bin-oci.tar", ".bin-oci"}) {
-            auto p = name.find(ext);
-            if (p != std::string::npos) { name = name.substr(0, p); break; }
-         }
-         tables["DeploymentUnit"].rows[inst]["Name"].rbus_string = name;
-      }
+      tables["DeploymentUnit"].rows[inst]["Name"].rbus_string = parse_du_name_from_uri(data.value("URI", ""));
 
       tables["DeploymentUnit"].rows[inst]["Version"].current_type = rbusValueType_t::RBUS_STRING;
       tables["DeploymentUnit"].rows[inst]["Version"].rbus_string = data.value("Version", "");
